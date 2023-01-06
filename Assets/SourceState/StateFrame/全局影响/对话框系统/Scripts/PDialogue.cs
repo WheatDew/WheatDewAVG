@@ -9,6 +9,7 @@ public class PDialogue : MonoBehaviour,IPointerClickHandler
 {
     public TMP_Text content,character;
     public Image picture,icon,scene;
+    public Dictionary<string,Image> pictures=new Dictionary<string, Image>();
     public PSelection selectionPrefab;
     public Transform selectionParent;
     public Image dialogue;
@@ -17,7 +18,8 @@ public class PDialogue : MonoBehaviour,IPointerClickHandler
     public bool enableClick;
     [HideInInspector] public bool isTextPlaying = false;
     [HideInInspector] public string textBuffer;
-
+    public Image picturePrefab;
+    public Transform pictureParent;
 
 
     public void SetText(string text)
@@ -71,4 +73,6 @@ public class PDialogue : MonoBehaviour,IPointerClickHandler
             Destroy(selectionParent.GetChild(i).gameObject);
         }
     }
+
+    
 }

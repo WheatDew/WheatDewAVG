@@ -4,6 +4,7 @@ using UnityEngine;
 using System.IO;
 using System;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 public class RDialogue : MonoBehaviour
 {
@@ -49,7 +50,7 @@ public class RDialogue : MonoBehaviour
         var contents = content.Split('\n');
         for(int i = 0; i < contents.Length; i++)
         {
-            var slices = contents[i].Split(':','：') ;
+            var slices = contents[i].Split(':','：');
             Debug.Log(slices[0]);
             if (slices[0] == "初始事件")
             {
@@ -176,8 +177,8 @@ public class RDialogue : MonoBehaviour
                     case "跳转":
                         SetEventWithDisplay(command[2]);
                         break;
-                    case "立绘震动":
-                        SetShake(dialoguePage.picture.transform);
+                    case "震动":
+                        SetShake();
                         next();
                         break;
                     case "选项":
@@ -185,32 +186,32 @@ public class RDialogue : MonoBehaviour
                         break;
                     case "显示立绘":
                         if (command.Length == 4)
-                            DisplayPicture(command[2], "0", "0");
+                            DisplayPictures(command[2], "0", "0");
                         else if (command.Length == 5)
                         {
-                            DisplayPicture(command[2], command[3], "0");
+                            DisplayPictures(command[2], command[3], "0");
                         }
                         else if (command.Length == 6)
-                            DisplayPicture(command[2], command[3], command[4]);
+                            DisplayPictures(command[2], command[3], command[4]);
                         next();
                         break;
                     case "设置位置":
-                        if (command.Length == 4)
-                            SetPicturePosition(new Vector3(float.Parse(command[2]), 0, 0));
-                        else if(command.Length == 5)
-                            SetPicturePosition(new Vector3(float.Parse(command[2]), float.Parse(command[3]), 0));
+                        if (command.Length == 5)
+                            SetPicturesPosition(command[2],new Vector3(float.Parse(command[3]), 0, 0));
+                        else if(command.Length == 6)
+                            SetPicturesPosition(command[2],new Vector3(float.Parse(command[3]), float.Parse(command[4]), 0));
                         break;
                     case "移动立绘":
-                        if (command.Length == 4)
-                            MovePicture(command[2], "0", "0.5");
-                        else if (command.Length == 5)
-                            MovePicture(command[2], command[3], "0.5");
+                        if (command.Length == 5)
+                            MovePictures(command[2],command[3], "0", "0.5");
                         else if (command.Length == 6)
-                            MovePicture(command[2], command[3], command[4]);
+                            MovePictures(command[2],command[3], command[4], "0.5");
+                        else if (command.Length == 7)
+                            MovePictures(command[2],command[3], command[4], command[5]);
                         next();
                         break;
                     case "隐藏立绘":
-                        HiddenPicture();
+                        HiddenPictures(command[2]);
                         next();
                         break;
                     case "隐藏图标":
@@ -323,9 +324,9 @@ public class RDialogue : MonoBehaviour
     }
 
     //震动
-    public async void SetShake(Transform target)
+    public async void SetShake()
     {
-        RectTransform rtransform = target.GetComponent<RectTransform>();
+        RectTransform rtransform = dialoguePage.transform.GetComponent<RectTransform>();
         for(int i = 0; i < 20; i++)
         {
             rtransform.localPosition -= Vector3.right*5;
@@ -342,6 +343,20 @@ public class RDialogue : MonoBehaviour
         dialoguePage.enableClick = false;
     }
 
+    //显示立绘（支持多个立绘）
+    public void DisplayPictures(string character,string pos_x,string pos_y)
+    {
+        if (pictures.ContainsKey(character))
+        {
+            var picture = Instantiate(dialoguePage.picturePrefab,dialoguePage.pictureParent);
+            dialoguePage.pictures.Add(character, picture);
+            picture.color = new Color(1, 1, 1, 1);
+            picture.sprite = Sprite.Create(pictures[character], new Rect(0, 0, pictures[character].width, pictures[character].height), Vector2.zero);
+            picture.rectTransform.localPosition = new Vector3(float.Parse(pos_x), float.Parse(pos_y), 0);
+
+        }
+    }
+
     //显示立绘
     public void DisplayPicture(string character,string pos_x,string pos_y)
     {
@@ -354,6 +369,22 @@ public class RDialogue : MonoBehaviour
         }
     }
 
+    //立绘移动(移动方向上的长度支持多个立绘)
+    public async void MovePictures(string character,string x, string y, string t)
+    {
+        Debug.LogFormat("设置x轴位置:{0};设置值长度:{1}", x, x.Length);
+        Vector3 direction = new Vector3(float.Parse(x), float.Parse(y));
+        float totalTime = float.Parse(t);
+        Vector3 targetPosition = dialoguePage.pictures[character].rectTransform.localPosition + direction;
+        Vector3 startPosition = dialoguePage.pictures[character].rectTransform.localPosition;
+        float currentTime = 0;
+        while (currentTime < totalTime)
+        {
+            dialoguePage.pictures[character].rectTransform.localPosition = Vector3.Lerp(startPosition, targetPosition, currentTime / totalTime);
+            currentTime += Time.deltaTime;
+            await new WaitForUpdate();
+        }
+    }
     //立绘移动(移动方向上的长度)
     public async void MovePicture(string x,string y,string t)
     {
@@ -371,12 +402,24 @@ public class RDialogue : MonoBehaviour
         }
     }
 
+    //设置立绘位置(支持多个立绘)
+    public void SetPicturesPosition(string character,Vector3 pos)
+    {
+        dialoguePage.pictures[character].rectTransform.localPosition = pos;
+    }
     //设置立绘位置
     public void SetPicturePosition(Vector3 pos)
     {
         dialoguePage.picture.rectTransform.localPosition = pos;
     }
 
+    //隐藏立绘(支持多个立绘)
+    public void HiddenPictures(string character)
+    {
+        dialoguePage.pictures[character].color = new Color(1, 1, 1, 0);
+        Destroy(dialoguePage.pictures[character].gameObject);
+        dialoguePage.pictures.Remove(character);
+    }
     //隐藏立绘
     public void HiddenPicture()
     {
@@ -432,7 +475,6 @@ public class RDialogue : MonoBehaviour
     public void HiddenDialogue()
     {
         dialoguePage.dialogue.gameObject.SetActive(false);
-
     }
 
     public async void TransitionSceneEffect()
