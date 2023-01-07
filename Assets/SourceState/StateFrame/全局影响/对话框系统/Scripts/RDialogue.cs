@@ -241,6 +241,9 @@ public class RDialogue : MonoBehaviour
                     case "隐藏对话":
                         HiddenDialogue();
                         break;
+                    case "立绘淡出":
+                        PicturesFadeOut(command[2]);
+                        break;
                 }
 
             }
@@ -357,17 +360,6 @@ public class RDialogue : MonoBehaviour
         }
     }
 
-    //显示立绘
-    public void DisplayPicture(string character,string pos_x,string pos_y)
-    {
-        if (convert.ContainsKey(character) && pictures.ContainsKey(convert[character]))
-        {
-            dialoguePage.picture.color = new Color(1, 1, 1, 1);
-            dialoguePage.picture.sprite = Sprite.Create(pictures[convert[character]], new Rect(0, 0, pictures[convert[character]].width, pictures[convert[character]].height), Vector2.zero);
-            Debug.Log(pos_x);
-            dialoguePage.picture.rectTransform.localPosition = new Vector3(float.Parse(pos_x),float.Parse(pos_y),0);
-        }
-    }
 
     //立绘移动(移动方向上的长度支持多个立绘)
     public async void MovePictures(string character,string x, string y, string t)
@@ -385,32 +377,11 @@ public class RDialogue : MonoBehaviour
             await new WaitForUpdate();
         }
     }
-    //立绘移动(移动方向上的长度)
-    public async void MovePicture(string x,string y,string t)
-    {
-        Debug.LogFormat("设置x轴位置:{0};设置值长度:{1}",x,x.Length);
-        Vector3 direction = new Vector3(float.Parse(x), float.Parse(y));
-        float totalTime =float.Parse(t);
-        Vector3 targetPosition = dialoguePage.picture.rectTransform.localPosition+direction;
-        Vector3 startPosition = dialoguePage.picture.rectTransform.localPosition;
-        float currentTime=0;
-        while (currentTime < totalTime)
-        {
-            dialoguePage.picture.rectTransform.localPosition = Vector3.Lerp(startPosition, targetPosition, currentTime / totalTime);
-            currentTime+=Time.deltaTime;
-            await new WaitForUpdate();
-        }
-    }
 
     //设置立绘位置(支持多个立绘)
     public void SetPicturesPosition(string character,Vector3 pos)
     {
         dialoguePage.pictures[character].rectTransform.localPosition = pos;
-    }
-    //设置立绘位置
-    public void SetPicturePosition(Vector3 pos)
-    {
-        dialoguePage.picture.rectTransform.localPosition = pos;
     }
 
     //隐藏立绘(支持多个立绘)
@@ -420,10 +391,32 @@ public class RDialogue : MonoBehaviour
         Destroy(dialoguePage.pictures[character].gameObject);
         dialoguePage.pictures.Remove(character);
     }
-    //隐藏立绘
-    public void HiddenPicture()
+    
+    //立绘淡出
+    public async void PicturesFadeOut(string character)
     {
-        dialoguePage.picture.color = new Color(1, 1, 1, 0);
+        while (true)
+        {
+            if (dialoguePage.pictures.ContainsKey(character) && dialoguePage.pictures[character].gameObject!=null)
+            {
+                if (dialoguePage.pictures[character].color.a > 0)
+                {
+                    dialoguePage.pictures[character].color -= Color.black * Time.deltaTime;
+                }
+                else
+                {
+                    DestroyImmediate(dialoguePage.pictures[character].gameObject);
+                    dialoguePage.pictures.Remove(character);
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+            await new WaitForUpdate();
+        }
+
     }
 
     //显示符号
